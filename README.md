@@ -9,7 +9,7 @@ Aplicación de línea de comandos en Node.js que consume la [FakeStore API](http
 ## Instalación
 
 ```bash
-git clone 
+git clone https://github.com/CammiBarletta/NodeJS_26132.git
 cd pre-entrega
 ```
 
