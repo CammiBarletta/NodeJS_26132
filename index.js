@@ -1,109 +1,41 @@
-console.log("Iniciando el programa...")
-const url_API = "https://fakestoreapi.com"
+import express from "express";
+import cors from "cors";
+import bodyParser from "body-parser";
+import 'dotenv/config';
+import productsRouter from './src/routes/products.routes.js';
+import authRouter from './src/routes/auth.routes.js';
 
-const argumentos = process.argv.slice(2)
+const app = express();
 
-const argumentos_validos = ["GET", "POST", "PUT", "DELETE"]
+app.use(cors({
+    origin: ["*"],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+}));
 
-console.log(argumentos)
+app.use(bodyParser.json());
 
-async function programa_principal(argumentos = []) {
+app.use((req, res, next) => {
+    console.log(`Datos recibidos: ${req.method} ${req.url}`);
+    next();
+});
 
-    if (!argumentos_validos.includes(argumentos[0])) {
-        console.log("Comando incorrecto")
-        return
-    }
+app.use("/api", productsRouter);
+app.use("/auth", authRouter);
 
-    switch(argumentos[0]){
-        case "GET":
-            if (!argumentos[1].includes("/") && argumentos[1] == "products"){
-                try{
-                    const response = await fetch(`${url_API}/products`, {
-                        method: "GET"
-                    })
-          
-                    if (response.status !== 200){
-                        throw new Error("Falla en la solicitud")
-                    }
-                    const data = await response.json()
-                    data.forEach(element => {
-                        console.log(element)
-                    });
-                    break;
-                }catch(error){
-                    console.log(error)
-                    break
-                }
-            } else if (argumentos[1].includes("/") && argumentos[1].includes("products")){
-                let id_sin_separar = argumentos[1].split("/")
-                try{
-                    const id = parseInt(id_sin_separar[1])
-                    const reponse = await fetch(`${url_API}/products/${id}`,{
-                        method: "GET"
-                    })
-                    if (reponse.status != 200){
-                        throw new Error("Error en la solicitud")
-                
-                    }
-                    const data = await reponse.json()
-                    console.log(data)
-                    break;
-                }catch(error){
-                    console.log(error)
-                    break;
-                }
-            }else{
-                console.log("Comando incorrecto")
-                break;
-            }
+// Middleware de rutas no encontradas
+app.use((req, res, next) => {
+    res.status(404).json({ error: "Ruta no encontrada" });
+});
 
-        case "POST":
-            if(argumentos.length == 5 && argumentos[1] == "products"){
-                const [ , , nombre, precio, categoria] = argumentos
-                const response = await fetch(`${url_API}/products`,{
-                    method : "POST",
-                    headers: { 'Content-Type': 'application/json' },
-        
-                    body: JSON.stringify({
-                        title: nombre,
-                        price: Number(precio),
-                        category: categoria
-                    })
-                })
-                if(!response.ok){
-                    throw new Error("Error en la solicitud")
-                }
-                const data = await response.json()
-                console.log(data)
-                break
-            }else{
-                console.log("Solicitud incompleta")
-                break
-            }
+// Middleware de manejo de errores general (para 400/401/403/500)
+app.use((err, req, res, next) => {
+    console.error(err);
+    const status = err.status || 500;
+    res.status(status).json({ error: err.message || "Error interno del servidor" });
+});
 
-        case "DELETE":
-            if(argumentos[1].includes("/") && argumentos[1].includes("products")){
-                let id_sin_separar = argumentos[1].split("/")
-                try{
-                    const id = parseInt(id_sin_separar[1])
-                    const reponse = await fetch(`${url_API}/products/${id}`,{
-                        method: "DELETE"
-                    })
-                    if (!reponse.ok){
-                        throw new Error("Error en la solicitud")
-                
-                    }
-                    const data = await reponse.json()
-                    console.log(data)
-                    break;
-                }catch(error){
-                    console.log(error)
-                    break;
-                }
-            }else{
-                console.log("Solicitud incorrecta")
-            }
-    }
-}
-
-programa_principal(argumentos)
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Servidor corriendo en http://localhost:${PORT}`);
+});
